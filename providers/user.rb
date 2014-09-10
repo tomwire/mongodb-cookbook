@@ -21,9 +21,9 @@ def add_user(username, password, roles = [], database)
   # must authenticate as a userAdmin after an admin user has been created
   # this will fail on the first attempt, but user will still be created
   # because of the localhost exception
-  if node['mongodb']['config']['auth'] == true
+  if @new_resource.connection['config']['auth'] == true
     begin
-      admin.authenticate(@new_resource.connection['admin']['username'], @new_resource.connection['admin']['password'])
+      admin.authenticate(@new_resource.connection['authentication']['username'], @new_resource.connection['authentication']['password'])
     rescue Mongo::AuthenticationError => e
       Chef::Log.warn("Unable to authenticate as admin user. If this is a fresh install, ignore warning: #{e}")
     end
@@ -44,7 +44,7 @@ def delete_user(username, database)
   admin = connection.db('admin')
   db = connection.db(database)
 
-  admin.authenticate(@new_resource.connection['admin']['username'], @new_resource.connection['admin']['password'])
+  admin.authenticate(@new_resource.connection['authentication']['username'], @new_resource.connection['authentication']['password'])
 
   if user_exists?(username, connection)
     db.remove_user(username)
