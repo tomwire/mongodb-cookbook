@@ -253,6 +253,10 @@ There's also a user resource which has the actions `:add`, `:modify` and `:delet
 used on a user that doesn't exist, it will be added. If add is used on a user that exists, it
 will be modified.
 
+If using this recipe with replication and sharding, ensure that the `node['mongodb']['key_file_content']`
+is set. All nodes must have the same key file in order for the replica set to initialize successfully
+when authentication is required.
+
 # LICENSE and AUTHOR:
 
 Author:: Markus Korn <markus.korn@edelight.de>
