@@ -31,8 +31,16 @@ def add_user(username, password, roles = [], database)
 
   # Create the user if they don't exist
   # Update the user if they already exist
-  db.add_user(username, password, false, :roles => roles)
-  Chef::Log.info("Created or updated user #{username} on #{database}")
+  begin
+    db.add_user(username, password, false, :roles => roles)
+    Chef::Log.info("Created or updated user #{username} on #{database}")
+  rescue Mongo::ConnectionFailure => e
+    if @new_resource.connection['is_replicaset']
+      Chef::Log.warn("Unable to add user, if this is a secondary replica, ignore: #{e}")
+    else
+      Chef::Log.fatal("Unable to add user: #{e}")
+    end
+  end
 end
 
 # Drop a user from the database specified
