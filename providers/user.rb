@@ -21,7 +21,7 @@ def add_user(username, password, roles = [], database)
   # must authenticate as a userAdmin after an admin user has been created
   # this will fail on the first attempt, but user will still be created
   # because of the localhost exception
-  if (@new_resource.connection['config']['auth'] == true) || (@new_resource.connection['mongodb']['mongos_create_admin'] == true)
+  if (@new_resource.connection['config']['auth'] == true) || (@new_resource.connection['mongos_create_admin'] == true)
     begin
       admin.authenticate(@new_resource.connection['authentication']['username'], @new_resource.connection['authentication']['password'])
     rescue Mongo::AuthenticationError => e
@@ -36,7 +36,40 @@ def add_user(username, password, roles = [], database)
     Chef::Log.info("Created or updated user #{username} on #{database}")
   rescue Mongo::ConnectionFailure => e
     if @new_resource.connection['is_replicaset']
-      Chef::Log.warn("Unable to add user, if this is a secondary replica, ignore: #{e}")
+      # Node is part of a replicaset and may not be initialized yet, going to retry if set to
+      i = 0
+      while i < @new_resource.connection['mongod_create_user']['retries']
+        begin
+          # See if we can get the current replicaset status back from the node
+          cmd = BSON::OrderedHash.new
+          cmd['replSetGetStatus'] = 1
+          result = admin.command(cmd)
+          # Check if the current node in the replicaset status has an info message set (at this point, most likely
+          # a message about the election)
+          hasInfoMessage = result['members'].select { |a| a['self'] && a.has_key?('infoMessage')}.count > 0
+          if result['myState'] == 1
+            # This node is a primary node, try to add the user
+            db.add_user(username, password, false, :roles => roles)
+            Chef::Log.info("Created or updated user #{username} on #{database} of primary replicaset node")
+            break
+          elsif result['myState'] == 2 && hasInfoMessage == true
+            # This node is secondary but may be in the process of an election, retry
+            Chef::Log.info("Unable to add user to secondary, election may be in progress, retrying in #{@new_resource.connection['mongod_create_user']['delay']} seconds...")
+          elsif result['myState'] == 2 && hasInfoMessage == false
+            # This node is secondary and not in the process of an election, bail out
+            Chef::Log.info('Current node appears to be a secondary node in replicaset, could not detect election in progress, not adding user')
+            break
+          end
+        rescue Mongo::ConnectionFailure => e
+          # Unable to connect to the node, may not be initialized yet
+          Chef::Log.warn("Unable to add user, retrying in #{@new_resource.connection['mongod_create_user']['delay']} seconds... #{e}")
+        rescue Mongo::OperationFailure => e
+          # Unable to make either add call or replicaset call on node, should retry incase it was in the middle of being initialized
+          Chef::Log.warn("Unable to add user, retrying in #{@new_resource.connection['mongod_create_user']['delay']} seconds... #{e}")
+        end
+        i += 1
+        sleep(@new_resource.connection['mongod_create_user']['delay'])
+      end
     else
       Chef::Log.fatal("Unable to add user: #{e}")
     end
@@ -53,7 +86,7 @@ def delete_user(username, database)
   db = connection.db(database)
 
   # Only try to authenticate with db if required
-  if (@new_resource.connection['config']['auth'] == true) || (@new_resource.connection['mongodb']['mongos_create_admin'] == true)
+  if (@new_resource.connection['config']['auth'] == true) || (@new_resource.connection['mongos_create_admin'] == true)
     begin
       admin.authenticate(@new_resource.connection['authentication']['username'], @new_resource.connection['authentication']['password'])
     rescue Mongo::AuthenticationError => e
