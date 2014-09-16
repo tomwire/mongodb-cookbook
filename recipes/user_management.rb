@@ -19,7 +19,7 @@ users.each do |user|
     if node['mongodb']['is_replicaset']
       # If it's a replicaset, don't make any users until the set is initialized
       action :nothing
-      subscribes :add, 'ruby_block[create_replicaset_users]', :delayed
+      subscribes :add, 'ruby_block[config_replicaset]', :delayed
     end
   end
 end
