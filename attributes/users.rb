@@ -6,3 +6,5 @@ default['mongodb']['admin'] = {
 }
 
 default['mongodb']['users'] = []
+
+default['mongodb']['mongos_create_admin'] = false

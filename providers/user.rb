@@ -21,7 +21,7 @@ def add_user(username, password, roles = [], database)
   # must authenticate as a userAdmin after an admin user has been created
   # this will fail on the first attempt, but user will still be created
   # because of the localhost exception
-  if node['mongodb']['config']['auth'] == true
+  if (node['mongodb']['config']['auth'] == true) || (node['mongodb']['mongos_create_admin'] == true)
     begin
       admin.authenticate(@new_resource.connection['admin']['username'], @new_resource.connection['admin']['password'])
     rescue Mongo::AuthenticationError => e
