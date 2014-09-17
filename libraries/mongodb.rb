@@ -244,6 +244,15 @@ class Chef::ResourceDefinitionList::MongoDB
 
     admin = connection['admin']
 
+    # If we require authentication on mongos / mongod, need to authenticate to run these commands
+    if node.recipe?('mongodb::user_management')
+      begin
+        admin.authenticate(node['mongodb']['authentication']['username'], node['mongodb']['authentication']['password'])
+      rescue Mongo::AuthenticationError => e
+        Chef::Log.warn("Unable to authenticate with database to add shards to mongos node: #{e}")
+      end
+    end
+
     shard_members.each do |shard|
       cmd = BSON::OrderedHash.new
       cmd['addShard'] = shard
@@ -274,6 +283,15 @@ class Chef::ResourceDefinitionList::MongoDB
     end
 
     admin = connection['admin']
+
+    # If we require authentication on mongos / mongod, need to authenticate to run these commands
+    if node.recipe?('mongodb::user_management')
+      begin
+        admin.authenticate(node['mongodb']['authentication']['username'], node['mongodb']['authentication']['password'])
+      rescue Mongo::AuthenticationError => e
+        Chef::Log.warn("Unable to authenticate with database to configure databased on mongos node: #{e}")
+      end
+    end
 
     databases = sharded_collections.keys.map { |x| x.split('.').first }.uniq
     Chef::Log.info("enable sharding for these databases: '#{databases.inspect}'")
