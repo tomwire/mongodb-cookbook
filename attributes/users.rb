@@ -17,6 +17,11 @@ default['mongodb']['users'] = []
 # user is created
 default['mongodb']['mongos_create_admin'] = false
 
+# For connecting to mongo on localhost, retries to make after
+# connection failures and delay in seconds to retry
+default['mongodb']['user_management']['connection']['retries'] = 1
+default['mongodb']['user_management']['connection']['delay'] = 1
+
 # For mongod replicasets, the delay in seconds and number
 # of times to retry adding a user. Used to handle election
 # of primary not being completed immediately

@@ -62,10 +62,10 @@ def add_user(username, password, roles = [], database)
           end
         rescue Mongo::ConnectionFailure => e
           # Unable to connect to the node, may not be initialized yet
-          Chef::Log.warn("Unable to add user, retrying in #{@new_resource.connection['mongod_create_user']['delay']} seconds... #{e}")
+          Chef::Log.warn("Unable to add user, retrying in #{@new_resource.connection['mongod_create_user']['delay']} second(s)... #{e}")
         rescue Mongo::OperationFailure => e
           # Unable to make either add call or replicaset call on node, should retry incase it was in the middle of being initialized
-          Chef::Log.warn("Unable to add user, retrying in #{@new_resource.connection['mongod_create_user']['delay']} seconds... #{e}")
+          Chef::Log.warn("Unable to add user, retrying in #{@new_resource.connection['mongod_create_user']['delay']} second(s)... #{e}")
         end
         i += 1
         sleep(@new_resource.connection['mongod_create_user']['delay'])
@@ -103,16 +103,24 @@ def delete_user(username, database)
 end
 
 # Get the MongoClient connection
-def retrieve_db
+def retrieve_db(attempt = 0)
   require 'rubygems'
   require 'mongo'
 
-  Mongo::MongoClient.new(
-    @new_resource.connection['host'],
-    @new_resource.connection['port'],
-    :connect_timeout => 15,
-    :slave_ok => true
-  )
+  begin
+    Mongo::MongoClient.new(
+      @new_resource.connection['host'],
+      @new_resource.connection['port'],
+      :connect_timeout => 15,
+      :slave_ok => true
+    )
+  rescue Mongo::ConnectionFailure => e
+    if(attempt) < @new_resource.connection['user_management']['connection']['retries']
+      Chef::Log.warn("Unable to connect to MongoDB instance, retrying in #{@new_resource.connection['user_management']['connection']['delay']} second(s)...")
+      sleep(@new_resource.connection['user_management']['connection']['delay'])
+      retrieve_db(attempt + 1)
+    end
+  end
 end
 
 action :add do
