@@ -236,7 +236,10 @@ class Chef::ResourceDefinitionList::MongoDB
     Chef::Log.info(shard_members.inspect)
 
     begin
-      connection = Mongo::Connection.new('localhost', node['mongodb']['config']['port'], :op_timeout => 5)
+      connection = nil
+      rescue_connection_failure do
+        connection = Mongo::Connection.new('localhost', node['mongodb']['config']['port'], :op_timeout => 5)
+      end
     rescue => e
       Chef::Log.warn("Could not connect to database: 'localhost:#{node['mongodb']['config']['port']}', reason #{e}")
       return
@@ -276,7 +279,10 @@ class Chef::ResourceDefinitionList::MongoDB
     require 'mongo'
 
     begin
-      connection = Mongo::Connection.new('localhost', node['mongodb']['config']['port'], :op_timeout => 5)
+      connection = nil
+      rescue_connection_failure do
+        connection = Mongo::Connection.new('localhost', node['mongodb']['config']['port'], :op_timeout => 5)
+      end
     rescue => e
       Chef::Log.warn("Could not connect to database: 'localhost:#{node['mongodb']['config']['port']}', reason #{e}")
       return
