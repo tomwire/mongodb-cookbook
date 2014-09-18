@@ -46,16 +46,16 @@ def add_user(username, password, roles = [], database)
           result = admin.command(cmd)
           # Check if the current node in the replicaset status has an info message set (at this point, most likely
           # a message about the election)
-          hasInfoMessage = result['members'].select { |a| a['self'] && a.has_key?('infoMessage')}.count > 0
+          has_info_message = result['members'].select { |a| a['self'] && a.key?('infoMessage') }.count > 0
           if result['myState'] == 1
             # This node is a primary node, try to add the user
             db.add_user(username, password, false, :roles => roles)
             Chef::Log.info("Created or updated user #{username} on #{database} of primary replicaset node")
             break
-          elsif result['myState'] == 2 && hasInfoMessage == true
+          elsif result['myState'] == 2 && has_info_message == true
             # This node is secondary but may be in the process of an election, retry
             Chef::Log.info("Unable to add user to secondary, election may be in progress, retrying in #{@new_resource.connection['mongod_create_user']['delay']} seconds...")
-          elsif result['myState'] == 2 && hasInfoMessage == false
+          elsif result['myState'] == 2 && has_info_message == false
             # This node is secondary and not in the process of an election, bail out
             Chef::Log.info('Current node appears to be a secondary node in replicaset, could not detect election in progress, not adding user')
             break
@@ -64,7 +64,7 @@ def add_user(username, password, roles = [], database)
           # Unable to connect to the node, may not be initialized yet
           Chef::Log.warn("Unable to add user, retrying in #{@new_resource.connection['mongod_create_user']['delay']} second(s)... #{e}")
         rescue Mongo::OperationFailure => e
-          # Unable to make either add call or replicaset call on node, should retry incase it was in the middle of being initialized
+          # Unable to make either add call or replicaset call on node, should retry in case it was in the middle of being initialized
           Chef::Log.warn("Unable to add user, retrying in #{@new_resource.connection['mongod_create_user']['delay']} second(s)... #{e}")
         end
         i += 1
