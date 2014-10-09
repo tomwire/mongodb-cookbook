@@ -261,7 +261,8 @@ will be modified.
 
 If using this recipe with replication and sharding, ensure that the `node['mongodb']['key_file_content']`
 is set. All nodes must have the same key file in order for the replica set to initialize successfully
-when authentication is required.
+when authentication is required. For mongos instances, set `node['mongodb']['mongos_create_admin']` to
+`true` to force the creation of the admin user on mongos instances.
 
 # LICENSE and AUTHOR:
 
