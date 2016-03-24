@@ -1,4 +1,4 @@
-default['mongodb']['mms_agent']['api_key'] = nil
+default['mongodb']['mms_agent']['api_key'] = '08103044-f50d-40b6-b5a1-41770645651a'
 default['mongodb']['mms_agent']['package_url'] = 'https://mms.mongodb.com/download/agent/%{agent_type}/mongodb-mms-%{agent_type}-agent'
 
 default['mongodb']['mms_agent']['monitoring']['version'] = '2.2.0.70-1'
